@@ -1,0 +1,24 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+
+# .NET
+bin/
+obj/
+
+# Docker
+*.log
+
+# Env
+.env
+
+# IDE
+.vscode/
+.idea/
+*.user
+*.suo
