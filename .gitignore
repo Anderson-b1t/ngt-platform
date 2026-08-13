@@ -1,24 +1,34 @@
-# OS
+# Operating system
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Node / Angular
+# Node.js / Angular
 node_modules/
 dist/
 .angular/
+coverage/
 
 # .NET
 bin/
 obj/
+TestResults/
 
-# Docker
-*.log
-
-# Env
-.env
-
-# IDE
-.vscode/
-.idea/
+# Visual Studio
+.vs/
 *.user
 *.suo
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
