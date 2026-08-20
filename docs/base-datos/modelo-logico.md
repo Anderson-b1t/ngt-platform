@@ -1,8 +1,9 @@
 # Modelo Lógico de Datos
 
 **Proyecto:** NGT Platform (Neo Genesis Technology)
-**Versión:** 1.0
-**Estado:** Modelo lógico validado para elaboración del modelo ER
+**Versión:** 1.1
+**Estado:** Aprobado
+**Origen:** ADR 0001 (monolito modular) y modelo lógico v1.0
 **Nivel:** Modelo lógico independiente de SQL Server, Entity Framework Core y detalles físicos de persistencia.
 
 ---
@@ -32,7 +33,9 @@ Este documento no define todavía:
 
 # 2. Criterios de diseño
 
-* Las entidades se organizan según los módulos funcionales definidos en la arquitectura.
+* Las entidades se organizan según los módulos de negocio definidos en la arquitectura: Identity, Commerce, PcBuilder, Game, SoftwareServices y Corporate.
+* Cada entidad pertenece conceptualmente a un módulo responsable de sus reglas de negocio.
+* Las relaciones entre módulos se mantienen explícitas, evitando convertir una relación conceptual en acceso indiscriminado a datos internos de otro módulo.
 * El modelo lógico representa el negocio y no la implementación técnica.
 * Las relaciones se modelan de forma explícita cuando contienen información o reglas propias.
 * Los estados se representan conceptualmente; su implementación física se decidirá posteriormente.
@@ -47,7 +50,7 @@ Este documento no define todavía:
 
 ---
 
-# 3. Usuarios y autorización
+# 3. Módulo Identity
 
 ## Usuario
 
@@ -117,41 +120,7 @@ Usuario N ─── N Rol
 
 ---
 
-## DireccionUsuario
-
-Representa una dirección guardada por un usuario para utilizarla posteriormente en sus compras.
-
-Atributos:
-
-* DireccionUsuarioId
-* UsuarioId
-* Alias
-* NombreDestinatario
-* Telefono
-* LineaDireccion1
-* LineaDireccion2
-* Pais
-* Region
-* Provincia
-* Distrito
-* CodigoPostal
-* Referencia
-* EsPredeterminada
-* Activa
-
-Relación:
-
-Usuario 1 ─── N DireccionUsuario
-
-Reglas:
-
-* Un usuario puede registrar múltiples direcciones.
-* Solo una dirección activa podrá considerarse predeterminada simultáneamente.
-* Una dirección guardada puede modificarse sin alterar pedidos realizados anteriormente.
-
----
-
-# 4. Catálogo y comercio electrónico
+# 4. Módulo Commerce — catálogo y datos comerciales
 
 ## Categoria
 
@@ -190,10 +159,10 @@ Relación:
 
 Categoria 1 ─── N Producto
 
-Especializaciones iniciales:
+Extensiones iniciales del producto:
 
-* ComponentePC
-* Publicacion
+* `Publicacion`, como especialización comercial dentro de Commerce.
+* `ComponentePC`, como información técnica asociada administrada por PcBuilder.
 
 Reglas:
 
@@ -201,41 +170,10 @@ Reglas:
 * El precio debe representar un valor comercial válido.
 * El stock no puede representar una cantidad negativa.
 * La desactivación de un producto impide nuevas ventas sin eliminar su historial.
-* Dentro del catálogo inicial, un producto especializado pertenece a una sola de las especializaciones definidas.
-* La información común permanece en `Producto`; la información específica pertenece a su especialización.
-
----
-
-## ComponentePC
-
-Representa la especialización de un producto utilizado en el ensamblador de computadoras.
-
-Atributos:
-
-* ProductoId
-* Marca
-* Modelo
-
-Relación:
-
-Producto 1 ─── 0..1 ComponentePC
-
-Reglas:
-
-* Un `ComponentePC` debe corresponder a exactamente uno de los subtipos técnicos definidos para el ensamblador.
-* El subtipo técnico determina las especificaciones requeridas.
-* No se almacena `TipoComponente` como segunda fuente de verdad; el subtipo correspondiente determina conceptualmente su naturaleza.
-
-Subtipos iniciales:
-
-* Procesador
-* PlacaMadre
-* MemoriaRAM
-* TarjetaGrafica
-* Almacenamiento
-* FuentePoder
-* Gabinete
-* Refrigeracion
+* Un producto no puede estar asociado simultáneamente a `Publicacion` y `ComponentePC`.
+* La información comercial común permanece en `Producto`.
+* La información editorial pertenece a `Publicacion` dentro de Commerce.
+* La información técnica de componentes pertenece a `ComponentePC` dentro de PcBuilder.
 
 ---
 
@@ -268,7 +206,43 @@ Reglas:
 
 ---
 
-# 5. Carrito de compra
+## DireccionUsuario
+
+Representa una dirección guardada por un usuario para utilizarla posteriormente en sus compras.
+
+Aunque se relaciona con `Usuario`, pertenece conceptualmente a Commerce porque su finalidad es apoyar el proceso de compra y entrega.
+
+Atributos:
+
+* DireccionUsuarioId
+* UsuarioId
+* Alias
+* NombreDestinatario
+* Telefono
+* LineaDireccion1
+* LineaDireccion2
+* Pais
+* Region
+* Provincia
+* Distrito
+* CodigoPostal
+* Referencia
+* EsPredeterminada
+* Activa
+
+Relación:
+
+Usuario 1 ─── N DireccionUsuario
+
+Reglas:
+
+* Un usuario puede registrar múltiples direcciones.
+* Solo una dirección activa podrá considerarse predeterminada simultáneamente.
+* Una dirección guardada puede modificarse sin alterar pedidos realizados anteriormente.
+
+---
+
+# 5. Módulo Commerce — carrito de compra
 
 ## Carrito
 
@@ -326,7 +300,7 @@ Reglas:
 
 ---
 
-# 6. Pedidos, entrega y pagos
+# 6. Módulo Commerce — pedidos, entrega y pagos
 
 ## Pedido
 
@@ -491,7 +465,7 @@ Reglas:
 
 ---
 
-# 7. Ensamblador de PC
+# 7. Módulo PcBuilder — ensamblador de PC
 
 El ensamblador permite crear configuraciones de computadora y determinar si constituyen equipos funcionales y técnicamente compatibles.
 
@@ -501,13 +475,50 @@ El backend aplica las reglas de compatibilidad.
 
 ---
 
+## ComponentePC
+
+Representa la entidad técnica de PcBuilder asociada a un producto comercializable de Commerce.
+
+Atributos:
+
+* ComponentePCId
+* ProductoId
+* Marca
+* Modelo
+
+Relación:
+
+Producto 1 ─── 0..1 ComponentePC
+
+Reglas:
+
+* `ComponentePCId` identifica al componente dentro del dominio técnico de PcBuilder.
+* `ProductoId` identifica el producto comercial asociado y mantiene la relación con Commerce.
+* Un producto puede estar asociado como máximo a un `ComponentePC`.
+* Un `ComponentePC` debe corresponder a exactamente uno de los subtipos técnicos definidos para el ensamblador.
+* El subtipo técnico determina las especificaciones requeridas.
+* No se almacena `TipoComponente` como segunda fuente de verdad; el subtipo correspondiente determina conceptualmente su naturaleza.
+
+Subtipos iniciales:
+
+* Procesador
+* PlacaMadre
+* MemoriaRAM
+* TarjetaGrafica
+* Almacenamiento
+* FuentePoder
+* Gabinete
+* Refrigeracion
+
+---
+
 ## Procesador
 
 Representa las características técnicas de un procesador.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * Socket
 * TdpWatts
 * ConsumoEstimadoWatts
@@ -535,7 +546,7 @@ Representa las características técnicas de una placa madre.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * Socket
 * Chipset
 * FormatoPlaca
@@ -567,8 +578,8 @@ Representa una combinación técnicamente soportada entre un procesador y una pl
 
 Atributos:
 
-* ProductoIdProcesador
-* ProductoIdPlacaMadre
+* ProcesadorId
+* PlacaMadreId
 * RequiereActualizacionBios
 * Observacion
 
@@ -597,7 +608,7 @@ Representa las características técnicas de un producto de memoria RAM.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * TipoMemoria
 * CapacidadTotalGB
 * ModulosPorKit
@@ -623,7 +634,7 @@ Representa las características técnicas de una tarjeta gráfica.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * LongitudMm
 * ConsumoEstimadoWatts
 * PotenciaFuenteRecomendadaWatts
@@ -651,7 +662,7 @@ Representa las características técnicas de una unidad de almacenamiento.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * TipoAlmacenamiento
 * Interfaz
 * CapacidadGB
@@ -685,7 +696,7 @@ Representa las características técnicas de una fuente de alimentación.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * PotenciaWatts
 * FormatoFuente
 
@@ -706,7 +717,7 @@ Representa las características físicas de un gabinete.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * LongitudMaximaGpuMm
 * AlturaMaximaRefrigeracionMm
 
@@ -724,7 +735,7 @@ Representa un formato de placa madre admitido por un gabinete.
 
 Atributos:
 
-* ProductoIdGabinete
+* GabineteId
 * FormatoPlaca
 
 Relación:
@@ -745,7 +756,7 @@ Representa un formato de fuente admitido por un gabinete.
 
 Atributos:
 
-* ProductoIdGabinete
+* GabineteId
 * FormatoFuente
 
 Relación:
@@ -765,7 +776,7 @@ Representa un tamaño de radiador admitido por un gabinete.
 
 Atributos:
 
-* ProductoIdGabinete
+* GabineteId
 * TamanoRadiadorMm
 
 Relación:
@@ -787,7 +798,7 @@ Representa una solución de refrigeración para el procesador.
 
 Atributos:
 
-* ProductoId
+* ComponentePCId
 * TipoRefrigeracion
 * AlturaMm
 * TamanoRadiadorMm
@@ -817,7 +828,7 @@ Representa un socket admitido por una solución de refrigeración.
 
 Atributos:
 
-* ProductoIdRefrigeracion
+* RefrigeracionId
 * Socket
 
 Relación:
@@ -868,7 +879,7 @@ Atributos:
 
 * ConfiguracionPCItemId
 * ConfiguracionPCId
-* ProductoId
+* ComponentePCId
 * Cantidad
 
 Relaciones:
@@ -880,8 +891,8 @@ ComponentePC 1 ─── N ConfiguracionPCItem
 Reglas:
 
 * La cantidad debe ser mayor que cero.
-* Un producto debe aparecer como máximo una vez en una configuración.
-* El producto seleccionado debe corresponder a un `ComponentePC`.
+* Un componente debe aparecer como máximo una vez en una configuración.
+* `ComponentePCId` debe corresponder a un componente técnico existente en PcBuilder.
 
 ---
 
@@ -1027,7 +1038,7 @@ Para permitir la compra deben cumplirse simultáneamente:
 
 Cuando una configuración compatible sea añadida al carrito:
 
-* cada componente se incorpora como producto del carrito;
+* cada `ComponentePC` se traduce al `ProductoId` comercial asociado antes de incorporarse al carrito;
 * se respeta la cantidad definida en `ConfiguracionPCItem`;
 * se vuelve a validar stock;
 * se vuelve a validar que los productos estén activos;
@@ -1061,7 +1072,7 @@ Un historial persistente de validaciones solo se incorporará si aparece una nec
 
 ---
 
-# 8. Videojuego
+# 8. Módulo Game — videojuego
 
 ## Juego
 
@@ -1146,7 +1157,7 @@ Reglas:
 
 ---
 
-# 9. Servicios de desarrollo
+# 9. Módulo SoftwareServices — servicios de desarrollo
 
 ## ServicioDesarrollo
 
@@ -1198,7 +1209,7 @@ Reglas:
 
 ---
 
-# 10. Contenido corporativo
+# 10. Módulo Corporate — contenido corporativo
 
 ## Empresa
 
@@ -1227,7 +1238,7 @@ Deben ser únicos conceptualmente:
 * Usuario.Email
 * Juego + PreregistroJuego.Email
 * Carrito + Producto dentro de DetalleCarrito
-* ConfiguracionPC + Producto dentro de ConfiguracionPCItem
+* ConfiguracionPC + ComponentePC dentro de ConfiguracionPCItem
 * Procesador + PlacaMadre dentro de CompatibilidadProcesadorPlaca
 * Gabinete + FormatoPlaca
 * Gabinete + FormatoFuente
@@ -1282,6 +1293,20 @@ Ejemplos:
 No existe una entidad `Administracion`.
 
 El panel administrativo utilizará capacidades de los diferentes módulos de acuerdo con las políticas de autorización.
+
+---
+
+## Propiedad y colaboración entre módulos
+
+* Identity es propietario conceptual de usuarios, roles y autorización.
+* Commerce es propietario de catálogo comercial, direcciones de compra, carrito, pedidos, pagos y disponibilidad comercial.
+* PcBuilder es propietario de especificaciones técnicas, compatibilidad y configuraciones de PC.
+* Game es propietario del contenido y preregistro del videojuego.
+* SoftwareServices es propietario del catálogo de servicios y sus solicitudes.
+* Corporate es propietario del contenido institucional.
+* Las referencias a `Usuario` desde otros módulos representan la identidad del actor, pero no transfieren la propiedad de la autenticación.
+* La relación `Producto` — `ComponentePC` conecta la identidad comercial con la identidad técnica sin convertir a PcBuilder en propietario del precio, stock o estado comercial.
+* Una compra originada desde PcBuilder debe utilizar el producto comercial asociado y delegar en Commerce las reglas de stock, precio, carrito, pedido y pago.
 
 ---
 
@@ -1365,7 +1390,7 @@ ServicioDesarrollo 1 ─── N SolicitudServicio
 
 ---
 
-# 13. Elementos deliberadamente fuera de la versión 1.0
+# 13. Elementos deliberadamente fuera de la versión 1.1
 
 No forman parte del modelo lógico inicial:
 
@@ -1398,7 +1423,7 @@ Estos elementos podrán incorporarse mediante nuevas iteraciones cuando exista u
 
 # 14. Estado del modelo
 
-El modelo lógico v1.0 establece la base funcional inicial de NGT Platform para:
+El modelo lógico v1.1 establece la base funcional inicial de NGT Platform para:
 
 * usuarios y autorización;
 * direcciones;
@@ -1416,6 +1441,4 @@ El modelo lógico v1.0 establece la base funcional inicial de NGT Platform para:
 * servicios de desarrollo;
 * contenido corporativo.
 
-El siguiente nivel de diseño corresponde al **Modelo Entidad–Relación (ER)**.
-
-El modelo ER deberá transformar estas relaciones conceptuales en entidades asociativas, cardinalidades y dependencias explícitas sin introducir todavía tipos de datos específicos de SQL Server.
+El modelo entidad–relación v1.1 deberá representar estas entidades, claves y cardinalidades manteniendo los límites entre módulos sin introducir tipos de datos específicos de SQL Server.
