@@ -57,31 +57,48 @@ Entity Framework Core
     ↓
 SQL Server
 
-## 5. Módulos funcionales iniciales
+## 5. Módulos de negocio iniciales
 
-### Usuarios
-Responsable de las cuentas, autenticación, autorización y gestión básica de usuarios.
+La división principal del backend se realizará por capacidades de
+negocio y no únicamente por capas técnicas.
 
-### Catálogo
-Responsable de productos, categorías, precios, stock y disponibilidad.
+### Identity
 
-### Ensamblador de PC
-Responsable de las configuraciones de PC y sus reglas de compatibilidad y validez.
+Responsable de las cuentas de usuario, autenticación, roles y
+autorización.
 
-### Pedidos
-Responsable de pedidos, detalles de pedido, estados e historial.
+### Commerce
 
-### Videojuego
-Responsable del contenido público relacionado con el videojuego, personajes, mapas y preregistros.
+Responsable del comercio electrónico de la plataforma, incluyendo
+catálogo de productos, categorías, publicaciones, carrito, pedidos,
+pagos y datos necesarios para el proceso de compra.
 
-### Servicios
-Responsable del catálogo de servicios de desarrollo y las solicitudes realizadas por los usuarios.
+### PcBuilder
 
-### Corporativo
+Responsable de los componentes técnicos de PC, reglas de compatibilidad,
+validación de configuraciones y configuraciones creadas por los usuarios.
+
+### Game
+
+Responsable del contenido relacionado con el videojuego, personajes,
+mapas y preregistros.
+
+### SoftwareServices
+
+Responsable del catálogo de servicios de desarrollo de software y las
+solicitudes realizadas por los usuarios.
+
+### Corporate
+
 Responsable del contenido institucional de Neo Genesis Technology.
 
 ### Administración
-Proporcionará las operaciones administrativas necesarias sobre los diferentes módulos.
+
+La administración no constituye un módulo de negocio independiente.
+
+Las operaciones administrativas serán proporcionadas por cada módulo y
+protegidas mediante las políticas de autenticación y autorización
+correspondientes.
 
 ## 6. Roles iniciales
 
@@ -106,7 +123,40 @@ Los permisos podrán evolucionar hacia un modelo más granular en futuras iterac
 - Implementar de manera incremental.
 - Documentar decisiones arquitectónicas relevantes.
 
-## 8. Estructura general del repositorio
+## 8. Organización del monolito modular
+
+El backend se ejecutará como una única aplicación ASP.NET Core.
+
+Cada módulo de negocio se implementará inicialmente como un proyecto
+.NET independiente dentro de la misma solución.
+
+Los módulos no podrán acceder directamente al DbContext ni a las
+implementaciones internas de otros módulos.
+
+La comunicación entre módulos se realizará mediante contratos
+explícitos.
+
+La persistencia utilizará inicialmente una única base de datos SQL
+Server denominada NgtPlatform.
+
+Cada módulo dispondrá de su propio DbContext y será responsable de las
+entidades que administra.
+
+La base de datos podrá organizar sus tablas mediante schemas asociados
+a los módulos.
+
+Las relaciones físicas que crucen límites entre módulos se evaluarán
+individualmente durante la revisión del modelo físico.
+
+La estructura interna de cada módulo podrá organizarse mediante Domain,
+Features, Infrastructure y Presentation cuando dichas divisiones sean
+necesarias.
+
+No se introducirán microservicios, brokers de mensajería ni
+infraestructura distribuida mientras no exista una necesidad concreta
+que justifique dicha complejidad.
+
+## 9. Estructura general del repositorio
 
 ngt-platform/
 ├── backend/
@@ -117,7 +167,7 @@ ngt-platform/
 ├── .gitignore
 └── README.md
 
-## 9. Estado
+## 10. Estado
 
 Arquitectura inicial definida.
 

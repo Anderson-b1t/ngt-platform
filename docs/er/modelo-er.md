@@ -1,9 +1,9 @@
 # Modelo Entidad–Relación
 
 **Proyecto:** NGT Platform (Neo Genesis Technology)
-**Versión:** 1.0
-**Estado:** Final
-**Origen:** Modelo lógico v1.0
+**Versión:** 1.1
+**Estado:** Aprobado
+**Origen:** Modelo lógico v1.1 y ADR 0001 (monolito modular)
 
 ---
 
@@ -13,9 +13,11 @@ Representar las entidades, atributos, claves y relaciones principales de NGT Pla
 
 En esta etapa no se definen tipos de datos, índices, restricciones físicas ni configuraciones específicas de Entity Framework Core.
 
+Las entidades se agrupan por módulos de negocio y las relaciones entre módulos se muestran de forma explícita.
+
 ---
 
-# 2. Usuarios y autorización
+# 2. Módulo Identity
 
 ## Usuario
 
@@ -36,39 +38,19 @@ En esta etapa no se definen tipos de datos, índices, restricciones físicas ni 
 * UsuarioId (PK, FK)
 * RolId (PK, FK)
 
-## DireccionUsuario
-
-* DireccionUsuarioId (PK)
-* UsuarioId (FK)
-* Alias
-* NombreDestinatario
-* Telefono
-* LineaDireccion1
-* LineaDireccion2
-* Pais
-* Region
-* Provincia
-* Distrito
-* CodigoPostal
-* Referencia
-* EsPredeterminada
-* Activa
-
 ```mermaid
 erDiagram
     Usuario ||--o{ UsuarioRol : posee
     Rol ||--o{ UsuarioRol : asigna
-    Usuario ||--o{ DireccionUsuario : registra
 ```
 
 Relaciones:
 
 * Usuario N ─── N Rol, mediante UsuarioRol.
-* Usuario 1 ─── N DireccionUsuario.
 
 ---
 
-# 3. Catálogo
+# 3. Módulo Commerce — catálogo y datos comerciales
 
 ## Categoria
 
@@ -87,11 +69,23 @@ Relaciones:
 * Stock
 * Activo
 
-## ComponentePC
+## DireccionUsuario
 
-* ProductoId (PK, FK)
-* Marca
-* Modelo
+* DireccionUsuarioId (PK)
+* UsuarioId (FK)
+* Alias
+* NombreDestinatario
+* Telefono
+* LineaDireccion1
+* LineaDireccion2
+* Pais
+* Region
+* Provincia
+* Distrito
+* CodigoPostal
+* Referencia
+* EsPredeterminada
+* Activa
 
 ## Publicacion
 
@@ -104,22 +98,22 @@ Relaciones:
 
 ```mermaid
 erDiagram
+    Usuario ||--o{ DireccionUsuario : registra
     Categoria ||--o{ Producto : contiene
-    Producto ||--o| ComponentePC : especializa
     Producto ||--o| Publicacion : especializa
 ```
 
 Relaciones:
 
+* Usuario 1 ─── N DireccionUsuario.
 * Categoria 1 ─── N Producto.
-* Producto 1 ─── 0..1 ComponentePC.
 * Producto 1 ─── 0..1 Publicacion.
 
-Un producto especializado corresponde a una única rama del catálogo inicial.
+Un producto asociado a `Publicacion` corresponde a la rama editorial de Commerce. La posible asociación con `ComponentePC` se representa en el módulo PcBuilder.
 
 ---
 
-# 4. Carrito de compra
+# 4. Módulo Commerce — carrito de compra
 
 ## Carrito
 
@@ -153,7 +147,7 @@ La combinación Carrito + Producto debe ser única.
 
 ---
 
-# 5. Pedidos, entrega y pagos
+# 5. Módulo Commerce — pedidos, entrega y pagos
 
 ## Pedido
 
@@ -235,11 +229,25 @@ Relaciones:
 
 ---
 
-# 6. Especialización de componentes de PC
+# 6. Módulo PcBuilder — componentes de PC
+
+## ComponentePC
+
+* ComponentePCId (PK)
+* ProductoId (FK, único)
+* Marca
+* Modelo
+
+Relación con Commerce:
+
+* Producto 1 ─── 0..1 ComponentePC.
+
+`ProductoId` es único en `ComponentePC`, de modo que un producto puede estar asociado como máximo a un componente técnico.
+
 
 ## Procesador
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * Socket
 * TdpWatts
 * ConsumoEstimadoWatts
@@ -248,7 +256,7 @@ Relaciones:
 
 ## PlacaMadre
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * Socket
 * Chipset
 * FormatoPlaca
@@ -261,7 +269,7 @@ Relaciones:
 
 ## MemoriaRAM
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * TipoMemoria
 * CapacidadTotalGB
 * ModulosPorKit
@@ -270,14 +278,14 @@ Relaciones:
 
 ## TarjetaGrafica
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * LongitudMm
 * ConsumoEstimadoWatts
 * PotenciaFuenteRecomendadaWatts
 
 ## Almacenamiento
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * TipoAlmacenamiento
 * Interfaz
 * CapacidadGB
@@ -285,19 +293,19 @@ Relaciones:
 
 ## FuentePoder
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * PotenciaWatts
 * FormatoFuente
 
 ## Gabinete
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * LongitudMaximaGpuMm
 * AlturaMaximaRefrigeracionMm
 
 ## Refrigeracion
 
-* ProductoId (PK, FK)
+* ComponentePCId (PK, FK)
 * TipoRefrigeracion
 * AlturaMm
 * TamanoRadiadorMm
@@ -305,6 +313,7 @@ Relaciones:
 
 ```mermaid
 erDiagram
+    Producto ||--o| ComponentePC : asocia
     ComponentePC ||--o| Procesador : especializa
     ComponentePC ||--o| PlacaMadre : especializa
     ComponentePC ||--o| MemoriaRAM : especializa
@@ -319,12 +328,12 @@ Cada `ComponentePC` corresponde exactamente a uno de estos subtipos.
 
 ---
 
-# 7. Compatibilidad procesador y placa madre
+# 7. Módulo PcBuilder — compatibilidad procesador y placa madre
 
 ## CompatibilidadProcesadorPlaca
 
-* ProductoIdProcesador (PK, FK)
-* ProductoIdPlacaMadre (PK, FK)
+* ProcesadorId (PK, FK)
+* PlacaMadreId (PK, FK)
 * RequiereActualizacionBios
 * Observacion
 
@@ -344,21 +353,21 @@ La existencia de una combinación representa compatibilidad técnica conocida en
 
 ---
 
-# 8. Compatibilidad del gabinete
+# 8. Módulo PcBuilder — compatibilidad del gabinete
 
 ## GabineteFormatoPlaca
 
-* ProductoIdGabinete (PK, FK)
+* GabineteId (PK, FK)
 * FormatoPlaca (PK)
 
 ## GabineteFormatoFuente
 
-* ProductoIdGabinete (PK, FK)
+* GabineteId (PK, FK)
 * FormatoFuente (PK)
 
 ## GabineteRadiadorSoportado
 
-* ProductoIdGabinete (PK, FK)
+* GabineteId (PK, FK)
 * TamanoRadiadorMm (PK)
 
 ```mermaid
@@ -376,11 +385,11 @@ Relaciones:
 
 ---
 
-# 9. Compatibilidad de refrigeración
+# 9. Módulo PcBuilder — compatibilidad de refrigeración
 
 ## RefrigeracionSocket
 
-* ProductoIdRefrigeracion (PK, FK)
+* RefrigeracionId (PK, FK)
 * Socket (PK)
 
 ```mermaid
@@ -394,7 +403,7 @@ Refrigeracion 1 ─── N RefrigeracionSocket.
 
 ---
 
-# 10. Configuraciones de PC
+# 10. Módulo PcBuilder — configuraciones de PC
 
 ## ConfiguracionPC
 
@@ -410,7 +419,7 @@ Refrigeracion 1 ─── N RefrigeracionSocket.
 
 * ConfiguracionPCItemId (PK)
 * ConfiguracionPCId (FK)
-* ProductoId (FK)
+* ComponentePCId (FK)
 * Cantidad
 
 ```mermaid
@@ -430,7 +439,7 @@ La combinación ConfiguracionPC + ComponentePC debe ser única.
 
 ---
 
-# 11. Videojuego
+# 11. Módulo Game — videojuego
 
 ## Juego
 
@@ -482,7 +491,7 @@ La combinación Juego + Email debe ser única.
 
 ---
 
-# 12. Servicios de desarrollo
+# 12. Módulo SoftwareServices — servicios de desarrollo
 
 ## ServicioDesarrollo
 
@@ -514,7 +523,7 @@ Relaciones:
 
 ---
 
-# 13. Contenido corporativo
+# 13. Módulo Corporate — contenido corporativo
 
 ## Empresa
 
@@ -530,7 +539,19 @@ Actualmente `Empresa` no requiere relaciones con otras entidades del dominio.
 
 ---
 
-# 14. Resumen general de relaciones
+# 14. Relaciones entre módulos
+
+Las siguientes relaciones conectan módulos diferentes sin transferir la propiedad conceptual de sus entidades:
+
+* `Usuario` se relaciona con entidades de Commerce, PcBuilder, Game y SoftwareServices como identidad del actor.
+* `Producto` pertenece a Commerce y puede asociarse con un `ComponentePC` perteneciente a PcBuilder.
+* Commerce conserva la propiedad de nombre, precio, stock, categoría y estado comercial del producto.
+* PcBuilder conserva la propiedad de las especificaciones técnicas, compatibilidad y configuraciones.
+* `ConfiguracionPCItem` referencia `ComponentePC`, no directamente `Producto`; la traducción al producto comercial asociado ocurre al iniciar una compra desde el ensamblador.
+
+---
+
+# 15. Resumen general de relaciones
 
 Usuario N ─── N Rol
 mediante UsuarioRol
@@ -610,8 +631,8 @@ ServicioDesarrollo 1 ─── N SolicitudServicio
 
 ---
 
-# 15. Estado del modelo
+# 16. Estado del modelo
 
-El modelo entidad–relación v1.0 define las entidades, atributos, claves y cardinalidades necesarias para representar el dominio inicial de NGT Platform.
+El modelo entidad–relación v1.1 define las entidades, atributos, claves y cardinalidades necesarias para representar el dominio inicial de NGT Platform.
 
-El siguiente nivel corresponde al **modelo físico de la base de datos**, donde se definirán tipos de datos, nulabilidad, restricciones, índices y demás características específicas de SQL Server.
+Este modelo sirve como base conceptual del modelo físico v1.1, donde se definen tipos de datos, nulabilidad, restricciones, índices, schemas y demás características específicas de SQL Server.
