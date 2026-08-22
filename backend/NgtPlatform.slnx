@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/api/">
+    <Project Path="src/api/NgtPlatform.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/" />
+  <Folder Name="/src/modules/commerce/">
+    <Project Path="src/modules/commerce/NgtPlatform.Modules.Commerce.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/corporate/">
+    <Project Path="src/modules/corporate/NgtPlatform.Modules.Corporate.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/game/">
+    <Project Path="src/modules/game/NgtPlatform.Modules.Game.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/identity/">
+    <Project Path="src/modules/identity/NgtPlatform.Modules.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/pcbuilder/">
+    <Project Path="src/modules/pcbuilder/NgtPlatform.Modules.PcBuilder.csproj" />
+  </Folder>
+  <Folder Name="/src/modules/software-services/">
+    <Project Path="src/modules/software-services/NgtPlatform.Modules.SoftwareServices.csproj" />
+  </Folder>
+</Solution>
